@@ -16,10 +16,10 @@
 
   <ItemGroup>
     <Reference Include="ViridiX.Linguist">
-      <HintPath>..\..\ViridiX\ViridiX.Linguist\bin\Debug\ViridiX.Linguist.dll</HintPath>
+      <HintPath>..\ViridiX\ViridiX.Linguist.dll</HintPath>
     </Reference>
     <Reference Include="ViridiX.Mason">
-      <HintPath>..\..\ViridiX\ViridiX.Linguist\bin\Debug\ViridiX.Mason.dll</HintPath>
+      <HintPath>..\ViridiX\ViridiX.Mason.dll</HintPath>
     </Reference>
   </ItemGroup>
 
