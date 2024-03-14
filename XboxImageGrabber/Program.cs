@@ -186,17 +186,9 @@ namespace XboxImageGrabber
                     // Get the d3d device pointer.
                     uint d3dDevicePtr = (uint)_xbox.Memory.ReadUInt32(addressMappings.d3d_g_pDevice);
 
-                    // Determine which surface to use based on the frame buffer count.
-                    uint frameBufferCount = (uint)_xbox.Memory.ReadUInt32(d3dDevicePtr + D3DParser.d3d_frame_buffer_count_offset);
-                    uint frontBufferSurfacePtr = 0; // (uint)_xbox.Memory.ReadUInt32(d3dDevicePtr + D3DParser.d3d_frame_buffer_offset);
-                    if (frameBufferCount == 3)
-                    {
-                        frontBufferSurfacePtr = (uint)_xbox.Memory.ReadUInt32(d3dDevicePtr + D3DParser.d3d_frame_buffer_offset);
-                    }
-                    else
-                    {
-                        frontBufferSurfacePtr = (uint)_xbox.Memory.ReadUInt32(d3dDevicePtr + D3DParser.d3d_frame_buffer_offset);
-                    }
+                    // The breakpoint is setup such that we use the (now) old front buffer that was swapped out. If we try to use either of the
+                    // back buffer surfaces the screenshot might have "tearing" scanlines on it...
+                    uint frontBufferSurfacePtr = (uint)_xbox.Memory.ReadUInt32(d3dDevicePtr + D3DParser.d3d_frame_buffer_offset);
 
                     // Get the back buffer info.
                     D3DPixelContainer frontBufferInfo = D3DParser.ParsePixelContainer(_xbox, frontBufferSurfacePtr);
@@ -230,24 +222,23 @@ namespace XboxImageGrabber
                             int roundedSize = ((pitch * frontBufferInfo.Height) + 4095) & ~4095;
                             byte[] tiledPixelData = _xbox.Memory.ReadBytes(0x80000000 | frontBufferInfo.Data, roundedSize);
 
-                            int frameBufferAddressBase = (int)(tile.Address & ~0x80000000);
-                            int frameBufferOffset = (int)(frontBufferInfo.Data - frameBufferAddressBase);
-
                             // Read the pixel buffer.
                             for (int y = 0; y < frontBufferInfo.Height; y++)
                             {
                                 for (int x = 0; x < frontBufferInfo.Width; x++)
                                 {
+                                    // Calculate the offsets for the current pixel in the tile image buffer and non-tiled buffer.
                                     int offset = ((y * frontBufferInfo.Width) + x) * 4;
                                     int tiledPtr = (y * pitch) + (x * 4);
 
-                                    int tiledAddress = D3DParser.TiledAddressToLinear(pitch, tiledPtr, false);
-                                    int tiledOffset = tiledAddress;// - (int)frontBufferInfo.Data;
+                                    // Convert the tiled offset to linear, this lets us copy the pixel data as "un-tiled".
+                                    int tiledOffset = D3DParser.TiledAddressToLinear(pitch, tiledPtr, false);
 
+                                    // Copy the current pixel value and ignore alpha channel so the png file doesn't end up semi-transparent
                                     pixelData[offset + 0] = tiledPixelData[tiledOffset + 0];
                                     pixelData[offset + 1] = tiledPixelData[tiledOffset + 1];
                                     pixelData[offset + 2] = tiledPixelData[tiledOffset + 2];
-                                    pixelData[offset + 3] = 0xFF;                               // Ignore alpha channel so the png file doesn't end up semi-transparent
+                                    pixelData[offset + 3] = 0xFF;
                                 }
                             }
                         }
@@ -326,9 +317,21 @@ namespace XboxImageGrabber
 
             // Check args to determine what to do.
             if (args.Length > 0 && args[0] == "-memory")
-                GetPhysicalMemoryImage(xbox, true, true);
+            {
+                // Determine if the console has 128MB of RAM or not.
+                bool has128RAM = xbox.Memory.Statistics.TotalPages > 0x4000;
+
+                // Determine if halo 2 is running.
+                bool haloIsRunning = xbox.Process.Modules.Last().Name.StartsWith("halo2");
+
+                // Create the memory stats bitmap.
+                GetPhysicalMemoryImage(xbox, has128RAM, haloIsRunning);
+            }
             else
+            {
+                // Dump the back buffer to a image locally.
                 DumpHaloBackBuffer(xbox);
+            }
 
             xbox.Disconnect();
         }
