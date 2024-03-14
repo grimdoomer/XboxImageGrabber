@@ -1,5 +1,6 @@
 # XboxImageGrabber
 Research tool to create images showing the memory profile of your Xbox console. The primary purpose of this tool was to help me "view" the memory layout of my Xbox console while developing the Halo 2 HD patch. May be useful to others for research in other areas...
+[](/_Images/memory_profile.png)
 
 ## Requirements
 This tool requires your Xbox console is running some form of "debug" BIOS and xbdm must be running on the console for it to connect. Can be used on a console with 64MB or 128MB of RAM.
