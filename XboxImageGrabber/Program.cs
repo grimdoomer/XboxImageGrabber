@@ -231,8 +231,12 @@ namespace XboxImageGrabber
                                     int offset = ((y * frontBufferInfo.Width) + x) * 4;
                                     int tiledPtr = (y * pitch) + (x * 4);
 
+                                    // Special case for 480p.
+                                    int modifier = frontBufferInfo.Width != 720 ? (int)frontBufferInfo.Data : 0;
+
                                     // Convert the tiled offset to linear, this lets us copy the pixel data as "un-tiled".
-                                    int tiledOffset = D3DParser.TiledAddressToLinear(pitch, tiledPtr, false);
+                                    int tiledOffset = D3DParser.TiledAddressToLinear(pitch, modifier + tiledPtr, false);
+                                    tiledOffset -= modifier;
 
                                     // Copy the current pixel value and ignore alpha channel so the png file doesn't end up semi-transparent
                                     pixelData[offset + 0] = tiledPixelData[tiledOffset + 0];
